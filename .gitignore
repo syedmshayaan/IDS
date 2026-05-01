@@ -1,0 +1,10 @@
+.env
+caputres/
+data/*.csv
+data/*.pcap
+ml/models/*.pk1
+__pycache__/
+*.pyc
+*.pyo
+.DS_Store
+.secret.key

@@ -1,0 +1,1 @@
+This project is an AI-based network intrusion detection system, which monitors live network packets and uses a sandbox verification system as well.
