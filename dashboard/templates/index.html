@@ -1,0 +1,389 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>AI-Based IDS Dashboard</title>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.0/chart.umd.min.js"></script>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+
+    body {
+      background: #0a0e1a;
+      color: #e0e6f0;
+      font-family: 'Segoe UI', sans-serif;
+      min-height: 100vh;
+    }
+
+    header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 16px 32px;
+      background: #0d1224;
+      border-bottom: 1px solid #1e2a45;
+    }
+
+    header h1 {
+      font-size: 1.4rem;
+      color: #4fc3f7;
+      letter-spacing: 2px;
+      text-transform: uppercase;
+    }
+
+    .live-badge {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 0.85rem;
+      color: #4caf50;
+    }
+
+    .live-dot {
+      width: 10px;
+      height: 10px;
+      background: #4caf50;
+      border-radius: 50%;
+      animation: pulse 1.5s infinite;
+    }
+
+    @keyframes pulse {
+      0%, 100% { opacity: 1; transform: scale(1); }
+      50% { opacity: 0.4; transform: scale(1.4); }
+    }
+
+    .stats-grid {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 16px;
+      padding: 24px 32px;
+    }
+
+    .stat-card {
+      background: #0d1224;
+      border: 1px solid #1e2a45;
+      border-radius: 12px;
+      padding: 20px;
+      text-align: center;
+      transition: transform 0.2s;
+    }
+
+    .stat-card:hover { transform: translateY(-4px); }
+
+    .stat-card .value {
+      font-size: 2.4rem;
+      font-weight: 700;
+      margin-bottom: 6px;
+    }
+
+    .stat-card .label {
+      font-size: 0.8rem;
+      color: #607d8b;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+    }
+
+    .stat-card.total   .value { color: #4fc3f7; }
+    .stat-card.threats .value { color: #f44336; }
+    .stat-card.benign  .value { color: #4caf50; }
+    .stat-card.sandbox .value { color: #ff9800; }
+
+    .main-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 16px;
+      padding: 0 32px 16px;
+    }
+
+    .panel {
+      background: #0d1224;
+      border: 1px solid #1e2a45;
+      border-radius: 12px;
+      padding: 20px;
+    }
+
+    .panel h2 {
+      font-size: 0.9rem;
+      color: #607d8b;
+      text-transform: uppercase;
+      letter-spacing: 1.5px;
+      margin-bottom: 16px;
+      padding-bottom: 10px;
+      border-bottom: 1px solid #1e2a45;
+    }
+
+    .chart-container {
+      position: relative;
+      height: 220px;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 0.82rem;
+    }
+
+    th {
+      text-align: left;
+      color: #607d8b;
+      padding: 8px 10px;
+      border-bottom: 1px solid #1e2a45;
+      font-weight: 500;
+      text-transform: uppercase;
+      font-size: 0.75rem;
+      letter-spacing: 1px;
+    }
+
+    td {
+      padding: 8px 10px;
+      border-bottom: 1px solid #0f1628;
+      color: #cfd8dc;
+    }
+
+    tr:hover td { background: #111827; }
+
+    .badge {
+      display: inline-block;
+      padding: 3px 10px;
+      border-radius: 20px;
+      font-size: 0.72rem;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+
+    .badge.benign        { background: #1b5e20; color: #69f0ae; }
+    .badge.malicious     { background: #b71c1c; color: #ff8a80; animation: glow 1.5s infinite; }
+    .badge.false_positive{ background: #1a237e; color: #82b1ff; }
+    .badge.confirmed     { background: #b71c1c; color: #ff8a80; }
+    .badge.critical      { background: #7f0000; color: #ff5252; }
+    .badge.high          { background: #e65100; color: #ffcc80; }
+    .badge.medium        { background: #f57f17; color: #fff176; }
+    .badge.error         { background: #37474f; color: #90a4ae; }
+
+    @keyframes glow {
+      0%, 100% { box-shadow: 0 0 4px #f44336; }
+      50% { box-shadow: 0 0 12px #f44336; }
+    }
+
+    .alert-panel {
+      padding: 0 32px 32px;
+    }
+
+    .sandbox-output {
+      font-family: monospace;
+      font-size: 0.75rem;
+      color: #80cbc4;
+      max-width: 200px;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+
+    .scrollable { max-height: 280px; overflow-y: auto; }
+    .scrollable::-webkit-scrollbar { width: 4px; }
+    .scrollable::-webkit-scrollbar-track { background: #0a0e1a; }
+    .scrollable::-webkit-scrollbar-thumb { background: #1e2a45; border-radius: 4px; }
+  </style>
+</head>
+<body>
+
+<header>
+  <h1>🛡️ AI-Based Intrusion Detection System</h1>
+  <div class="live-badge">
+    <div class="live-dot"></div>
+    <span id="clock">--:--:--</span>
+  </div>
+</header>
+
+<div class="stats-grid">
+  <div class="stat-card total">
+    <div class="value" id="stat-total">0</div>
+    <div class="label">Total Packets</div>
+  </div>
+  <div class="stat-card threats">
+    <div class="value" id="stat-threats">0</div>
+    <div class="label">Threats Detected</div>
+  </div>
+  <div class="stat-card benign">
+    <div class="value" id="stat-benign">0</div>
+    <div class="label">Benign Traffic</div>
+  </div>
+  <div class="stat-card sandbox">
+    <div class="value" id="stat-sandbox">0</div>
+    <div class="label">Sandbox Jobs</div>
+  </div>
+</div>
+
+<div class="main-grid">
+  <div class="panel">
+    <h2>Live Packet Feed</h2>
+    <div class="scrollable">
+      <table>
+        <thead>
+          <tr>
+            <th>Time</th>
+            <th>Src IP</th>
+            <th>Dst IP</th>
+            <th>Port</th>
+            <th>Prediction</th>
+          </tr>
+        </thead>
+        <tbody id="packet-table"></tbody>
+      </table>
+    </div>
+  </div>
+
+  <div class="panel">
+    <h2>Threat Distribution</h2>
+    <div class="chart-container">
+      <canvas id="dist-chart"></canvas>
+    </div>
+  </div>
+
+  <div class="panel">
+    <h2>Sandbox Activity</h2>
+    <div class="scrollable">
+      <table>
+        <thead>
+          <tr>
+            <th>Time</th>
+            <th>Payload</th>
+            <th>Verdict</th>
+            <th>Output</th>
+          </tr>
+        </thead>
+        <tbody id="sandbox-table"></tbody>
+      </table>
+    </div>
+  </div>
+
+  <div class="panel">
+    <h2>ML Prediction Breakdown</h2>
+    <div class="chart-container">
+      <canvas id="pred-chart"></canvas>
+    </div>
+  </div>
+</div>
+
+<div class="alert-panel">
+  <div class="panel">
+    <h2>🚨 Alert Log — Confirmed Threats</h2>
+    <div class="scrollable">
+      <table>
+        <thead>
+          <tr>
+            <th>Time</th>
+            <th>Src IP</th>
+            <th>Dst IP</th>
+            <th>Attack Type</th>
+            <th>Severity</th>
+            <th>Verdict</th>
+          </tr>
+        </thead>
+        <tbody id="alert-table"></tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+<script>
+  // Clock
+  setInterval(() => {
+    document.getElementById("clock").textContent = new Date().toLocaleTimeString();
+  }, 1000);
+
+  // Charts
+  const distChart = new Chart(document.getElementById("dist-chart"), {
+    type: "doughnut",
+    data: { labels: [], datasets: [{ data: [], backgroundColor: ["#4caf50","#f44336","#ff9800","#2196f3","#9c27b0","#00bcd4"] }] },
+    options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { labels: { color: "#cfd8dc", font: { size: 11 } } } } }
+  });
+
+  const predChart = new Chart(document.getElementById("pred-chart"), {
+    type: "bar",
+    data: { labels: [], datasets: [{ label: "Count", data: [], backgroundColor: "#4fc3f7" }] },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      plugins: { legend: { display: false } },
+      scales: {
+        x: { ticks: { color: "#607d8b" }, grid: { color: "#1e2a45" } },
+        y: { ticks: { color: "#607d8b" }, grid: { color: "#1e2a45" } }
+      }
+    }
+  });
+
+  function badge(text) {
+    const cls = (text || "").toLowerCase().replace(" ", "_");
+    return `<span class="badge ${cls}">${text || "—"}</span>`;
+  }
+
+  function shortTime(ts) {
+    if (!ts) return "—";
+    return ts.split("T")[1]?.split(".")[0] || ts;
+  }
+
+  async function refresh() {
+    const [stats, packets, alerts, sandbox] = await Promise.all([
+      fetch("/api/stats").then(r => r.json()),
+      fetch("/api/packets").then(r => r.json()),
+      fetch("/api/alerts").then(r => r.json()),
+      fetch("/api/sandbox").then(r => r.json()),
+    ]);
+
+    // Stats
+    document.getElementById("stat-total").textContent   = stats.total;
+    document.getElementById("stat-threats").textContent = stats.threats;
+    document.getElementById("stat-benign").textContent  = stats.benign;
+    document.getElementById("stat-sandbox").textContent = stats.sandbox;
+
+    // Distribution chart
+    const dist = stats.distribution || [];
+    distChart.data.labels   = dist.map(d => d.prediction);
+    distChart.data.datasets[0].data = dist.map(d => d.count);
+    distChart.update();
+
+    predChart.data.labels   = dist.map(d => d.prediction);
+    predChart.data.datasets[0].data = dist.map(d => d.count);
+    predChart.update();
+
+    // Packet table
+    document.getElementById("packet-table").innerHTML = packets.map(p => `
+      <tr>
+        <td>${shortTime(p.timestamp)}</td>
+        <td>${p.src_ip || "—"}</td>
+        <td>${p.dst_ip || "—"}</td>
+        <td>${p.dst_port || "—"}</td>
+        <td>${badge(p.prediction)}</td>
+      </tr>
+    `).join("");
+
+    // Sandbox table
+    document.getElementById("sandbox-table").innerHTML = sandbox.map(s => `
+      <tr>
+        <td>${shortTime(s.timestamp)}</td>
+        <td style="font-size:0.75rem;max-width:150px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${s.payload || "—"}</td>
+        <td>${badge(s.verdict)}</td>
+        <td class="sandbox-output">${s.output || "—"}</td>
+      </tr>
+    `).join("");
+
+    // Alert table
+    document.getElementById("alert-table").innerHTML = alerts.map(a => `
+      <tr>
+        <td>${shortTime(a.timestamp)}</td>
+        <td>${a.src_ip || "—"}</td>
+        <td>${a.dst_ip || "—"}</td>
+        <td>${a.attack_type || "—"}</td>
+        <td>${badge(a.severity)}</td>
+        <td>${badge(a.verdict)}</td>
+      </tr>
+    `).join("");
+  }
+
+  refresh();
+  setInterval(refresh, 3000);
+</script>
+</body>
+</html>
