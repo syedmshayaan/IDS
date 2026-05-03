@@ -5,7 +5,7 @@ from sklearn.metrics import classification_report, confusion_matrix, accuracy_sc
 from ml.train import load_data, prepare
 
 DATA_PATH = "data/Friday.csv"
-LABEL_COL = "Attack Type"
+LABEL_COL = "Label"
 
 def evaluate(model_path, X_test, y_test, le):
     model = joblib.load(model_path)

@@ -7,10 +7,10 @@ from sklearn.model_selection import train_test_split
 from sklearn.preprocessing import LabelEncoder
 
 DATA_PATH = "data/Friday.csv"
-LABEL_COL = "Attack Type"
+LABEL_COL = "Label"
 
 def load_data(path, label_col):
-    df = pd.read_csv(path, nrows=100000)
+    df = pd.read_csv(path)
     df.columns = df.columns.str.strip()
     df = df.replace([float('inf'), float('-inf')], pd.NA)
     df = df.dropna()
