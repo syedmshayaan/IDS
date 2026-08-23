@@ -3,13 +3,17 @@ import joblib
 
 MODEL_PATH   = "ml/models/random_forest.pkl"
 ENCODER_PATH = "ml/models/label_encoder.pkl"
-INPUT_PATH   = "captures/aligned.csv"
+INPUT_PATH   = "data/Friday.csv"
 
 def predict(input_path=INPUT_PATH):
     model = joblib.load(MODEL_PATH)
     le    = joblib.load(ENCODER_PATH)
     df    = pd.read_csv(input_path)
-    df    = df.replace([float('inf'), float('-inf')], pd.NA).fillna(0)
+    df.columns = df.columns.str.strip()
+    if "Label" in df.columns:
+        df = df.drop(columns=["Label"])
+    df = df.apply(pd.to_numeric, errors='coerce').fillna(0)
+    df = df.replace(float('inf'), 0).replace(float('-inf'), 0)
 
     trained_features = model.feature_names_in_
     for col in trained_features:
@@ -29,3 +33,9 @@ def predict(input_path=INPUT_PATH):
     df.to_csv("captures/predictions.csv", index=False)
     print("[+] Predictions saved to captures/predictions.csv")
     return df
+
+if __name__ == "__main__":
+    predict()
+
+if __name__ == "__main__":
+    predict()

@@ -5,10 +5,9 @@ from datetime import datetime
 DB_PATH = "dashboard/ids.db"
 
 def get_connection():
-    conn = sqlite3.connect(DB_PATH)
+    conn = sqlite3.connect(DB_PATH, timeout=30, check_same_thread=False)
     conn.row_factory = sqlite3.Row
     return conn
-
 def init_db():
     os.makedirs("dashboard", exist_ok=True)
     conn = get_connection()

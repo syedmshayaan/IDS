@@ -13,11 +13,13 @@ SEVERITY_MAP = {
 }
 
 def process_prediction(packet: dict, prediction: str):
-    if prediction == "Normal Traffic":
-        return
+    if prediction == "BENIGN" or prediction == "Normal Traffic":
+    	return
 
     severity = SEVERITY_MAP.get(prediction, "medium")
-    payload  = f"src={packet.get('src_ip')} dst={packet.get('dst_ip')} type={prediction}"
+    src = packet.get('src_ip', '')
+    dst = packet.get('dst_ip', '')
+    payload = f"print('src={src} dst={dst} type={prediction}')"
     result   = send_to_sandbox(payload)
 
     insert_sandbox_job({
