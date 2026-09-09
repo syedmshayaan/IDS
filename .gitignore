@@ -2,7 +2,7 @@
 caputres/
 data/*.csv
 data/*.pcap
-ml/models/*.pk1
+ml/models/*.pkl
 __pycache__/
 *.pyc
 *.pyo
