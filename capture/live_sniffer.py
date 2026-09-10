@@ -6,7 +6,7 @@ from scapy.all import sniff, IP, TCP, UDP, get_if_list, conf
 from capture.handshake import analyze_handshake
 
 CSV_FILE  = "captures/traffic.csv"
-INTERFACE = "wlo1"
+INTERFACE = "wlp0s20f0u1"
 FIELDS    = ["timestamp", "src_ip", "dst_ip", "protocol",
              "src_port", "dst_port", "flags", "length"]
 
