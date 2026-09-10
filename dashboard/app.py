@@ -1,3 +1,4 @@
+import os
 import pandas as pd
 import joblib
 import threading
@@ -14,19 +15,29 @@ def safe_int(val):
         return int(float(val))
     except (ValueError, TypeError):
         return 0
-
 def run_pipeline():
+    last_processed = 0
     while True:
         try:
+            if not os.path.exists("captures/traffic.csv"):
+                time.sleep(5)
+                continue
+
             traffic = pd.read_csv("captures/traffic.csv")
-            preds   = pd.read_csv("captures/predictions.csv")
-            labels  = preds["prediction"].tolist() if "prediction" in preds.columns else []
+            
+            pred_labels = []
+            if os.path.exists("captures/predictions.csv"):
+                preds = pd.read_csv("captures/predictions.csv")
+                pred_labels = preds["prediction"].tolist()
 
-            import itertools
-            label_cycle = itertools.cycle(labels)
+            new_traffic = traffic.iloc[last_processed:]
+            if len(new_traffic) == 0:
+                time.sleep(5)
+                continue
 
-            for _, row in traffic.iterrows():
-                prediction = next(label_cycle)
+            for i, (_, row) in enumerate(new_traffic.iterrows()):
+                abs_idx    = last_processed + i
+                prediction = pred_labels[abs_idx] if abs_idx < len(pred_labels) else "BENIGN"
                 packet = {
                     "timestamp":  str(row.get("timestamp", datetime.now().isoformat())),
                     "src_ip":     str(row.get("src_ip", "") or ""),
@@ -41,12 +52,15 @@ def run_pipeline():
                 insert_packet(packet)
                 process_prediction(packet, prediction)
 
+            last_processed = len(traffic)
+
         except Exception as e:
             import traceback
             print(f"[pipeline error] {e}")
             traceback.print_exc()
 
         time.sleep(10)
+
 
 @app.route("/")
 def index():

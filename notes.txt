@@ -1,0 +1,6 @@
+Before starting the project, clear out these files.
+
+rm -f captures/traffic.csv captures/processed.csv captures/processed.enc captures/aligned.csv captures/predictions.csv captures/temp_decrypted.csv captures/.last_processed_row captures/.last_predicted_row
+rm -f dashboard/ids.db
+
+

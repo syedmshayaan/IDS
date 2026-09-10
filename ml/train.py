@@ -12,9 +12,10 @@ LABEL_COL = "Label"
 def load_data(path, label_col):
     df = pd.read_csv(path)
     df.columns = df.columns.str.strip()
-    df = df.apply(pd.to_numeric, errors='coerce')
-    df = df.replace(float('inf'), 0).replace(float('-inf'), 0)
-    df = df.dropna()    
+    cols = [c for c in df.columns if c != label_col]
+    df[cols] = df[cols].apply(pd.to_numeric, errors='coerce')
+    df[cols] = df[cols].replace(float('inf'), 0).replace(float('-inf'), 0)
+    df = df.dropna(subset=cols)
     return df
 
 def prepare(df, label_col):

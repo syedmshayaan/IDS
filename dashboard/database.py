@@ -108,8 +108,9 @@ def get_recent_sandbox_jobs(limit=20):
 def get_stats():
     conn = get_connection()
     total    = conn.execute("SELECT COUNT(*) FROM packets").fetchone()[0]
-    threats  = conn.execute("SELECT COUNT(*) FROM packets WHERE prediction != 'Normal Traffic'").fetchone()[0]
-    benign   = conn.execute("SELECT COUNT(*) FROM packets WHERE prediction = 'Normal Traffic'").fetchone()[0]
+    threats  = conn.execute("SELECT COUNT(*) FROM packets WHERE prediction != 'BENIGN'").fetchone()[0]
+    benign   = conn.execute("SELECT COUNT(*) FROM packets WHERE prediction = 'BENIGN'").fetchone()[0]
+
     sandbox  = conn.execute("SELECT COUNT(*) FROM sandbox_jobs").fetchone()[0]
     dist     = conn.execute('''
         SELECT prediction, COUNT(*) as count
